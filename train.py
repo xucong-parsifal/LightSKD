@@ -25,7 +25,7 @@ parser.add_argument("--datasets", default='CIFAR100', type=str)
 parser.add_argument("--num_classes", default=100, type=int)
 parser.add_argument("--temperature", default=4.0, type=float)
 parser.add_argument("--batch_size", default=128, type=float)
-parser.add_argument("--alpha", default=0.2, dest="RI-Loss")
+parser.add_argument("--alpha", default=0.2, dest="RG-Loss")
 parser.add_argument("--beta", default=1, dest="SW-Loss")
 parser.add_argument("--large_trans", default=False)
 parser.add_argument("--model", default='ResNet18')
@@ -33,7 +33,7 @@ parser.add_argument("--model_path", default="./save/")
 parser.add_argument("--initial_lr", default=0.1, type=float)
 parser.add_argument("--momentum", default=0.9, type=float)
 parser.add_argument("--weight_decay", default=5e-4, type=float)
-parser.add_argument("--DRI", default=True)
+parser.add_argument("--DRG", default=True)
 parser.add_argument("--DSR", default=True)
 args = parser.parse_args()
 print(args)
@@ -59,7 +59,7 @@ optimizer = optim.SGD([{'params': net.parameters()}, {'params': ada_net.paramete
                       lr=args.initial_lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
 load_dir = args.model_path
-load_name = load_dir+str(args.model)+'F0.2HD.pth'
+load_name = load_dir+str(args.model)+'.pth'
 if not os.path.isdir(load_dir):
     os.makedirs(load_dir)
 if os.path.isfile(load_name):
@@ -113,8 +113,8 @@ def train(epoch):
         total += targets.size(0)
         correct += predicted.eq(targets.data).sum().float().cpu()
         train_loss += loss.item()
-        
-        last_output_processed = output_processed
+        if args.DRG:
+            last_output_processed = output_processed
 
         if (batch_idx + 1) % 40 == 0:
             print(batch_idx + 1, len(trainloader),
@@ -122,7 +122,7 @@ def train(epoch):
                   % (train_loss / (batch_idx + 1), 100. * correct / total, correct, total,
                      train_i_loss / (batch_idx + 1),train_r_loss / (batch_idx + 1)))
 
-    filename = args.model_path+str(args.model)+'FULL0.2HD.pth'
+    filename = args.model_path+str(args.model)+'.pth'
     state = None
     if args.use_parallel:
         state = {'net': net.module.state_dict(), 'net_d': ada_net.module.state_dict()}
